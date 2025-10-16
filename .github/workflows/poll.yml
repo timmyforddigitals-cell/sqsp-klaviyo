@@ -1,10 +1,12 @@
 name: Poll Squarespace Orders and Forward to Klaviyo
-permissions:
-  contents: write
+
 on:
   schedule:
-    - cron: '*/5 * * * *'   # every 5 minutes
-  workflow_dispatch: {}
+    - cron: "*/5 * * * *"   # every 5 minutes
+  workflow_dispatch:        # allow manual trigger
+
+permissions:
+  contents: write
 
 jobs:
   poll:
@@ -13,18 +15,21 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
         with:
+          token: ${{ secrets.GITHUB_TOKEN }}   # ✅ allows commits to processed.json
           persist-credentials: true
 
-      - name: Setup Node 18
+      - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 18
+          node-version: "20"   # ✅ use latest stable version
+
+      - name: Install dependencies
+        run: npm ci || npm install
 
       - name: Run poll script
         env:
           SQUARESPACE_API_KEY: ${{ secrets.SQUARESPACE_API_KEY }}
           KLAVIYO_API_KEY: ${{ secrets.KLAVIYO_API_KEY }}
           POLL_WINDOW_MINUTES: ${{ secrets.POLL_WINDOW_MINUTES || '1440' }}
-          TEST_FORWARD: ${{ secrets.TEST_FORWARD || 'false' }}
-        run: |
-          node scripts/poll.js
+          TEST_FORWARD: "true"   # ✅ set to true so it actually sends to Klaviyo
+        run: node scripts/poll.js
