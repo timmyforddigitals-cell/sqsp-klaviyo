@@ -1,34 +1,32 @@
 name: Poll Squarespace Orders and Forward to Klaviyo
 
 on:
-schedule:
-- cron: '*/5 * * * *'   # every 5 minutes
-workflow_dispatch: {}
+  schedule:
+    - cron: '*/5 * * * *'   # every 5 minutes
+  workflow_dispatch: {}
 
 permissions:
-contents: write
+  contents: write
 
 jobs:
-poll:
-runs-on: ubuntu-latest
-steps:
-- name: Checkout repo
-uses: actions/checkout@v4
-with:
-persist-credentials: true
+  poll:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: true
 
-```
-  - name: Setup Node 18
-    uses: actions/setup-node@v4
-    with:
-      node-version: 18
+      - name: Setup Node 18
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
 
-  - name: Run poll script
-    env:
-      SQUARESPACE_API_KEY: ${{ secrets.SQUARESPACE_API_KEY }}
-      KLAVIYO_API_KEY: ${{ secrets.KLAVIYO_API_KEY }}
-      POLL_WINDOW_MINUTES: ${{ secrets.POLL_WINDOW_MINUTES || '1440' }}
-      TEST_FORWARD: ${{ secrets.TEST_FORWARD || 'false' }}
-    run: |
-      node scripts/poll.js
-```
+      - name: Run poll script
+        env:
+          SQUARESPACE_API_KEY: ${{ secrets.SQUARESPACE_API_KEY }}
+          KLAVIYO_API_KEY: ${{ secrets.KLAVIYO_API_KEY }}
+          POLL_WINDOW_MINUTES: ${{ secrets.POLL_WINDOW_MINUTES || '1440' }}
+          TEST_FORWARD: ${{ secrets.TEST_FORWARD || 'false' }}
+        run: |
+          node scripts/poll.js
