@@ -27,6 +27,8 @@ jobs:
           SQUARESPACE_API_KEY: ${{ secrets.SQUARESPACE_API_KEY }}
           KLAVIYO_API_KEY: ${{ secrets.KLAVIYO_API_KEY }}
           POLL_WINDOW_MINUTES: ${{ secrets.POLL_WINDOW_MINUTES || '1440' }}
-          TEST_FORWARD: 'true'   # ✅ Always forward new orders to Klaviyo
+          TEST_FORWARD: 'false'  # ✅ LIVE MODE – sends to Klaviyo directly
+          INCLUDE_FULFILLED: 'true'  # ✅ also check fulfilled orders
+          INCLUDE_REFUNDED: 'true'   # ✅ also check refunded orders
         run: |
           node scripts/poll.js
