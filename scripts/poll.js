@@ -109,17 +109,48 @@ async function run() {
       if (order.testmode === true || order.testmode === "true") { processed.push(order.id); continue; }
 
       const isCourse = (order.lineItems || []).some(li => li.lineItemType === "PAYWALL_PRODUCT");
-      const eventName = isCourse ? "Course Purchased" : "Product Purchased";
-      const payload = buildKlaviyoPayload(order, eventName);
+let eventName = isCourse ? "Course Purchased" : "Product Purchased";
 
-      if (TEST_FORWARD) {
-        const kl = await sendToKlaviyo(payload);
-        if (kl.ok) { processed.push(order.id); processedThisRun.push(order.id); }
-      } else {
-        // dry-run marks as processed to avoid repeats
-        processed.push(order.id);
-        processedThisRun.push(order.id);
-      }
+// 🧠 Detect refund-related orders
+// Squarespace uses `financialStatus` or `fulfillmentStatus` to show refund state.
+// Example possible values: "REFUNDED", "CANCELLED", "CHARGEBACK"
+const isRefunded = (order.financialStatus && order.financialStatus.toLowerCase().includes("refund")) 
+  || (order.fulfillmentStatus && order.fulfillmentStatus.toLowerCase().includes("refund"));
+
+if (isRefunded) {
+  eventName = "Order Refunded";
+}
+
+// 🧱 Build base payload
+const payload = buildKlaviyoPayload(order, eventName);
+
+// If refunded, add refund details
+if (eventName === "Order Refunded") {
+  payload.data.attributes.properties.refund_amount =
+    (order.refunds && order.refunds[0]?.amount?.value) || 
+    (order.grandTotal && order.grandTotal.value) || 
+    null;
+  payload.data.attributes.properties.refund_reason =
+    (order.refunds && order.refunds[0]?.reason) || 
+    order.cancellationReason || 
+    "N/A";
+  payload.data.attributes.properties.status = "refunded";
+}
+
+if (TEST_FORWARD) {
+  const kl = await sendToKlaviyo(payload);
+  if (kl.ok) {
+    processed.push(order.id);
+    processedThisRun.push(order.id);
+    log(`✅ Sent ${eventName} for order ${order.id}`);
+  } else {
+    log(`⚠️ Failed to send ${eventName} for order ${order.id}:`, kl.status, kl.text);
+  }
+} else {
+  processed.push(order.id);
+  processedThisRun.push(order.id);
+}
+
     } catch (e) {
       // continue on error
     }
